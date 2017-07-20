@@ -22,8 +22,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.schedulers.Schedulers;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -47,8 +45,9 @@ public class LoginActivity extends AppCompatActivity {
         mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
 
         RxView.clicks(mEmailSignInButton)
-                .doOnNext(object -> Toast.makeText(this, "Signin call should be called", Toast.LENGTH_SHORT).show()).subscribe();
+                .doOnNext(object -> Toast.makeText(this, "SignIn call should be called", Toast.LENGTH_SHORT).show()).subscribe();
 
+        //region observables
         Observable<Boolean> emailObservable = RxTextView.textChanges(mEmailView)
                 .map(charSequence -> isEmailValid(charSequence.toString()))
                 .doOnNext(aBoolean -> {
@@ -66,7 +65,11 @@ public class LoginActivity extends AppCompatActivity {
                     else
                         mPasswordView.setTextColor(getResources().getColor(R.color.colorRed));
                 });
-
+        /**
+         * combine latest will aggregates the latest values of each of the
+         * source ObservableSources each time an item is received from either of the source ObservableSources, where this
+         * aggregation is defined by a specified function.
+         */
         Observable.combineLatest(emailObservable, passwordbservable, (b1, b2) -> {
                     if (b1 && b2)
                         mEmailSignInButton.setEnabled(true);
@@ -74,27 +77,28 @@ public class LoginActivity extends AppCompatActivity {
                         mEmailSignInButton.setEnabled(false);
                     return "success";
                 }
-                ).subscribe();
-
+        ).subscribe();
+        //endregion
 
     }
 
+    //region animations
     private void hideBtn() {
 
-// get the center for the clipping circle
+        // get the center for the clipping circle
         int cx = mEmailSignInButton.getWidth() / 2;
         int cy = mEmailSignInButton.getHeight() / 2;
 
-// get the initial radius for the clipping circle
+        // get the initial radius for the clipping circle
         float initialRadius = (float) Math.hypot(cx, cy);
 
-// create the animation (the final radius is zero)
+        // create the animation (the final radius is zero)
         Animator anim = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             anim =
                     ViewAnimationUtils.createCircularReveal(mEmailSignInButton, cx, cy, initialRadius, 0);
         }
-// make the view invisible when the animation is done
+        // make the view invisible when the animation is done
         anim.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
@@ -103,7 +107,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-// start the animation
+        // start the animation
         anim.start();
 
     }
@@ -111,25 +115,27 @@ public class LoginActivity extends AppCompatActivity {
     private void visibleBtn() {
         // previously invisible view;
 
-// get the center for the clipping circle
+        // get the center for the clipping circle
         int cx = mEmailSignInButton.getWidth() / 2;
         int cy = mEmailSignInButton.getHeight() / 2;
 
-// get the final radius for the clipping circle
+        // get the final radius for the clipping circle
         float finalRadius = (float) Math.hypot(cx, cy);
 
-// create the animator for this view (the start radius is zero)
+        // create the animator for this view (the start radius is zero)
         Animator anim =
                 null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             anim = ViewAnimationUtils.createCircularReveal(mEmailSignInButton, cx, cy, 0, finalRadius);
         }
 
-// make the view visible and start the animation
+        // make the view visible and start the animation
         mEmailSignInButton.setVisibility(View.VISIBLE);
         anim.start();
     }
+    //endregion
 
+    //region validation
     private boolean isEmailValid(String email) {
         Pattern VALID_EMAIL_ADDRESS_REGEX =
                 Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
@@ -142,7 +148,9 @@ public class LoginActivity extends AppCompatActivity {
 
         return password.length() >= 6;
     }
+    //endregion
 
+    //region helper methods
     /**
      * Shows the progress UI and hides the login form.
      */
@@ -178,15 +186,6 @@ public class LoginActivity extends AppCompatActivity {
             mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
-
-    private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
-        //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(LoginActivity.this,
-                        android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
-
-        mEmailView.setAdapter(adapter);
-    }
-
+    //endregion
 }
 
